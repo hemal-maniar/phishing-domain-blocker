@@ -3,9 +3,6 @@
 # Date: 11/2/2022
 
 # Libraries for Selenium
-from concurrent.futures import thread
-from logging import warning
-from tkinter import E
 from selenium import webdriver as wd
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -20,9 +17,6 @@ import time
 from getpass import getpass
 
 # Libraries for Outlook 
-from distutils.log import error, info, warn
-import email
-import enum
 import win32com.client
 import os
 from datetime import datetime, timedelta
@@ -33,6 +27,8 @@ import datetime as dt
 # Colour
 import termcolor
 os.system("color")
+
+PATH = "C:\\Program Files (x86)\\"
 
 yWarn = termcolor.colored("[WARNING]", "yellow")
 bInfo = termcolor.colored("[INFO]", "blue")
@@ -107,24 +103,31 @@ def domainChecker(emailFrom):
             reader.close()
             return False
 
-def domainListBlocker(emID, pwID, browser):
-    browser = browser
+def domainListBlocker(emID, pwID, browser, duoAuth):
     if browser == "1":
         option = CO()
         option.add_argument("--log-level=3")
-        #option.headless = True
-        serv = CS("C:\Program Files (x86)\chromedriver.exe")
+        option.add_argument("window-size=1920,1080")
+        if duoAuth == "3":
+            option.headless = False
+        else:
+            option.headless = True
+        serv = CS(PATH + "chromedriver.exe")
         driver = wd.Chrome(service=serv, options=option)
     elif browser == "2":
         option = Options()
         option.headless = True
-        serv = Service("C:\Program Files (x86)\geckodriver.exe")
+        option.add_argument("window-size=1920,1080")
+        if duoAuth == "3":
+            option.headless = False
+        else:
+            option.headless = True
+        serv = Service(PATH + "geckodriver.exe")
         driver = wd.Firefox(options=option, service=serv)
             
     # Begin driver
     driver.get("https://admin.microsoft.com")
-    print(f"\n{bInfo}\t\t Running Firefox.")
-    driver.maximize_window()
+    print(f"\n{bInfo}\t\t Running browser.")
 
     WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.ID, "i0116")))
     email = driver.find_element(By.ID, "i0116")
@@ -141,16 +144,29 @@ def domainListBlocker(emID, pwID, browser):
     WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.ID, "duo_iframe")))
     duoFrame = driver.find_element(By. XPATH, "//iframe[@id='duo_iframe']")
     driver.switch_to.frame(duoFrame)
-    WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.XPATH, "//button[contains(., 'Send Me a Push')]")))
-    driver.find_element(By.XPATH, "//button[contains(., 'Send Me a Push')]").click()
-    driver.switch_to.default_content()
-    print(f"[STATUS]\t Waiting for Duo authentication...")
+
+    # Duo authentication method
+    if duoAuth == "1":    
+        WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.XPATH, "//button[contains(., 'Send Me a Push')]")))
+        driver.find_element(By.XPATH, "//button[contains(., 'Send Me a Push')]").click()
+        driver.switch_to.default_content()
+        print(f"[STATUS]\t Waiting for Duo authentication...")
+    elif duoAuth == "2":
+        WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.XPATH, "//button[contains(., 'Call Me')]")))
+        driver.find_element(By.XPATH, "//button[contains(., 'Call Me')]").click()
+        driver.switch_to.default_content()
+        print(f"[STATUS]\t Waiting for Duo authentication...")
+    elif duoAuth == "3":
+        WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.XPATH, "//button[contains(., 'Enter a Passcode)]")))
+        driver.find_element(By.XPATH, "//button[contains(., 'Enter a Passcode')]").click()
+        driver.switch_to.default_content()
+        print(f"[STATUS]\t Waiting for Duo authentication...")
     
     WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.ID, "idBtn_Back"))).click()
     print(f"{gSuccess}\t 2FA authenticated.")
-    print(f"{bInfo}\t\t Logged in successfully.")
+    print(f"{bInfo}\t\t Logged in successfully.")    
 
-    WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, "//a[@name='Exchange']")))
+    WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.XPATH, "//a[@name='Exchange']")))
     driver.find_element(By. XPATH, "//a[@name='Exchange']").click()
     driver.switch_to.window(driver.window_handles[1])
 
@@ -165,7 +181,7 @@ def domainListBlocker(emID, pwID, browser):
     rule = driver.find_element(By.XPATH, "//table/tbody/tr[14]/td[2]")
     action = ActionChains(driver)
     action.double_click(rule)
-    action.perform()
+    action.perform()    
     driver.switch_to.window(driver.window_handles[2])
     driver.maximize_window()
 
@@ -208,8 +224,7 @@ def domainListBlocker(emID, pwID, browser):
     driver.quit()
 
 def selector():
-    print("\n")
-    print("Automated Phishing Domain Blocker for O365 Exchange Center")
+    print("\nAutomated Phishing Domain Blocker for O365 Exchange Center")
     choose = str(input("\n1. Fetch phishing domains from Outlook.\n2. Run domain list blocker\n\nYour Response: "))
     if choose == "1":
         domainFetcher()
@@ -220,11 +235,12 @@ def selector():
         elif choose2 == "n":
             pexit()
         else:
+            print("{rError}\t\t Invalid choice. Choose the correct option and try again.\n")
             selector()
     elif choose == "2":
         login()
     else:
-        print("{rError}\t\t Invalid choice.\n")
+        print("{rError}\t\t Invalid choice. Choose the correct option and try again.\n")
         selector()
 
 def pexit():
@@ -236,10 +252,18 @@ def login():
     pwID = getpass("Password: ")
     browser = str(input("\nChoose your desired browser\n1. Chrome\n2. Firefox\n\nYour Response: "))
     if browser != "1" and browser != "2":
-        print(f"{rError}\t\t Invalid choice.\n")
+        print(f"{rError}\t\t Invalid choice. Choose the correct option and try again.\n")
         login()
     else:
-        domainListBlocker(emID, pwID, browser)
+        duoMethod(emID, pwID, browser)
+
+def duoMethod(emID, pwID, browser):
+    duoAuth = str(input("\nChoose your Duo authentication method\n1. Send Me a Push.\n2. Call Me.\n3. Enter a Passcode.\n\nYour Response: "))
+    if duoAuth == "1" or duoAuth == "2" or duoAuth == "3":
+        domainListBlocker(emID, pwID, browser, duoAuth)
+    else:
+        print(f"{rError}\t\t Invalid choice. Choose the correct option and try again.\n")
+        duoMethod(emID, pwID, browser)
 
 if __name__ == "__main__":
     selector()
