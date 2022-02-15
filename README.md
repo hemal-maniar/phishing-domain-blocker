@@ -1,6 +1,6 @@
 # Automatic Phishing Domain Blocker
 
-An automatic phishing domain blocker that is designed to fetch email domain from your "Phish Alert" mailbox right into your Microsoft Office 365 Exchange Admin Center. 
+An automatic phishing domain blocker that is designed to fetch email domain from your "Phish Alert" mailbox right into your Microsoft Office 365 Exchange Admin Center. This script is currently designed to handle Duo Authentication using "Send Me a Push" method for login. 
 
 ## Requirements
 
