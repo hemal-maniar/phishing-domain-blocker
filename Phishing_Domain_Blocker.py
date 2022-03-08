@@ -39,6 +39,7 @@ def domainFetcher():
     day = datetime.today()
     start_time = day.replace(hour=0, minute=0, second=0).strftime("%Y-%m-%d %H:%M %p")
     end_time = day.replace(hour=23, minute=59, second=59).strftime("%Y-%m-%d %H:%M %p")
+    
     # Outlook
     try:
         outlook = win32com.client.GetActiveObject("Outlook.Application")
@@ -195,12 +196,12 @@ def domainListBlocker(emID, pwID, browser, duoAuth):
     count = 1
     while True:
         domain = domainList.readline()
-        domain = domain[:-2]
-        if not domain:
-            break
-        domainField.send_keys(domain)
+        domain = domain.split("\n")
+        domainField.send_keys(domain[0])
         domainField.send_keys(Keys.RETURN)
-        print(f"{gSuccess}\t [{count}] {domain} Successfully added to Domain Blocklist.")
+        if not domain[0]:
+            break       
+        print(f"{gSuccess}\t [{count}] {domain[0]} Successfully added to Domain Blocklist.")
         count += 1
     domainList.close()
     
